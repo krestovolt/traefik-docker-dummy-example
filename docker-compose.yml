@@ -1,0 +1,53 @@
+version: '3'
+
+services:
+  proxy:
+    image: traefik:1.7-alpine
+    ports:
+      - 8080:8080 # Access through port 8080 e.g. localhost:8080 -> dashboard
+      - 9999:80 # Access through port 9999 e.g. localhost:9999 -> actual service
+      - 443:443 # Access through port 443 e.g. localhost:443 -> unused in this example
+    networks:
+      - traefik
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    container_name: traefik
+    command: --docker --api --docker.domain=local.docker
+  
+  whoami:
+    # Service accessible through port 9999 e.g. localhost:9999/whoami
+    image: emilevauge/whoami # A container that exposes an API to show its IP address
+    networks:
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.backend=whoami
+      - traefik.docker.network=traefik
+      - traefik.whoami.frontend.entryPoints=http
+      ## will receive from '/'
+      ## with '/service/whoami' stripped down e.g. /service/whoami/ or /service/whoami
+      - traefik.whoami.frontend.rule=PathStrip:/service/whoami
+      ## will receive from '/some/url/path', with '/service/whoami' as prefix
+      ## with '/service/whoami' stripped down e.g. /service/whoami/some/url/path
+      # - traefik.whoami.frontend.rule=PathPrefixStrip:/service/whoami
+
+  flask:
+    # Service accessible through port 9999 e.g. localhost:9999/flask
+    image: traefik_flask:latest
+    build:
+      context: ./
+      dockerfile: flask.dockerfile
+    networks:
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.backend=flask
+      - traefik.docker.network=traefik
+      - traefik.flask.frontend.entryPoints=http
+      # - traefik.flask.frontend.rule=PathPrefixStrip:/service/flask
+      - traefik.flask.frontend.rule=PathStrip:/service/flask # For exact match, flask will receive request from '/'
+      - traefik.flask.port=5000
+
+networks:
+  traefik:
+    external: true
