@@ -15,7 +15,7 @@ services:
     command: --docker --api --docker.domain=local.docker
   
   whoami:
-    # Service accessible through port 9999 e.g. localhost:9999/whoami
+    # Service accessible through port 9999 e.g. localhost:9999/service/whoami
     image: emilevauge/whoami # A container that exposes an API to show its IP address
     networks:
       - traefik
@@ -32,7 +32,7 @@ services:
       # - traefik.whoami.frontend.rule=PathPrefixStrip:/service/whoami
 
   flask:
-    # Service accessible through port 9999 e.g. localhost:9999/flask
+    # Service accessible through port 9999 e.g. localhost:9999/service/flask
     image: traefik_flask:latest
     build:
       context: ./
